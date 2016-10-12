@@ -66,6 +66,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "########################## UPDATING APT ############################"
     echo "####################################################################"
+    add-apt-repository -y ppa:ondrej/mysql-5.7
+    add-apt-repository -y ppa:ondrej/php
     apt-get update
 
     echo "####################################################################"
@@ -83,7 +85,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "######################## INSTALLING MYSQL ##########################"
     echo "####################################################################"
-    add-apt-repository -y ppa:ondrej/mysql-5.7
     export DEBIAN_FRONTEND="noninteractive"
     debconf-set-selections <<< "mysql-server mysql-server/root_password password password1"
     debconf-set-selections <<< "mysql-server mysql-server/root_password_again password password1"
@@ -105,8 +106,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "########################## INSTALLING PHP ##########################"
     echo "####################################################################"
-    add-apt-repository -y ppa:ondrej/php
     apt-get -y install php7.0-fpm
+
+    echo "####################################################################"
+    echo "###################### INSTALLING PHP EXTENSIONS ###################"
+    echo "####################################################################"
+    apt-get -y install php7.0-mcrypt php7.0-curl php7.0-cli php7.0-mysql php7.0-gd php7.0-intl php7.0-common php-pear php7.0-dev php7.0-xsl php-xdebug
 
     echo "####################################################################"
     echo "########################## CONFIGURE PHP ###########################"
@@ -120,16 +125,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "xdebug.remote_connect_back = 1" >> ${PHP_INI_PATH}
 
     service php7.0-fpm restart
-
-    echo "####################################################################"
-    echo "###################### INSTALLING PHP EXTENSIONS ###################"
-    echo "####################################################################"
-    apt-get -y install php7.0-mcrypt php7.0-curl php7.0-cli php7.0-mysql php7.0-gd php7.0-intl php7.0-common php-pear php7.0-dev php7.0-xsl php-xdebug
-
-    echo "####################################################################"
-    echo "########################## PHP MYCRYPT PATCH #######################"
-    echo "####################################################################"
-    phpenmod mcrypt
 
     echo "####################################################################"
     echo "########################## INSTALLING GIT ##########################"
@@ -148,13 +143,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     debconf-set-selections <<< "postfix postfix/mailname string site.dev"
     debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
     apt-get -y install postfix
-
-    echo "####################################################################"
-    echo "################## SETTING OWNERSHIP AND PERMISSIONS ###############"
-    echo "####################################################################"
-    chown -R www-data ${HTTP_PATH}/site/
-    find ${HTTP_PATH}/site/ -type d -exec chmod 700 {} \;
-    find ${HTTP_PATH}/site/ -type f -exec chmod 600 {} \;
 
     echo "####################################################################"
     echo "########################### CONFIG NGINX ###########################"
