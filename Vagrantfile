@@ -51,6 +51,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     PHP_INI_PATH="/etc/php/7.0/fpm/php.ini"
     MYSQL_CFG_PATH="/etc/mysql/mysql.conf.d/mysqld.cnf"
     MYSQL_PASSWORD="password1"
+    MYSQL_DUMP_FILE="${HTTP_PATH}/dump.sql"
+    MYSQL_DUMP_FILE_GZ="${HTTP_PATH}/dump.sql.gz"
+    DB_NAME_FOR_IMPORT="site"
 
     echo "####################################################################"
     echo "############################# Edit PS1 #############################"
@@ -105,6 +108,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     service mysql restart
 
     echo "####################################################################"
+    echo "######################## IMPORT DB IF EXIST ########################"
+    echo "####################################################################"
+
+    if [ -f ${MYSQL_DUMP_FILE_GZ} ]; then
+        gunzip < ${MYSQL_DUMP_FILE_GZ} | mysql -u root -p${MYSQL_PASSWORD} ${DB_NAME_FOR_IMPORT}
+    fi
+
+    if [ -f ${MYSQL_DUMP_FILE} ]; then
+        mysql -u root -p${MYSQL_PASSWORD} ${DB_NAME_FOR_IMPORT} < ${MYSQL_DUMP_FILE}
+    fi
+
+    echo "####################################################################"
     echo "########################## INSTALLING PHP ##########################"
     echo "####################################################################"
     apt-get -y install php7.0-fpm
@@ -156,7 +171,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         index index.php index.html index.htm;
 
         server_name site.dev;
-        root /var/www/html/site;
+        root ${HTTP_PATH};
 
         ssl_certificate     ssl.crt;
         ssl_certificate_key ssl.key;
