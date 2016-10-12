@@ -50,6 +50,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     HTTP_PATH="/var/www/html/site"
     PHP_INI_PATH="/etc/php/7.0/fpm/php.ini"
     MYSQL_CFG_PATH="/etc/mysql/mysql.conf.d/mysqld.cnf"
+    MYSQL_PASSWORD="password1"
 
     echo "####################################################################"
     echo "############################# Edit PS1 #############################"
@@ -86,8 +87,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "######################## INSTALLING MYSQL ##########################"
     echo "####################################################################"
     export DEBIAN_FRONTEND="noninteractive"
-    debconf-set-selections <<< "mysql-server mysql-server/root_password password password1"
-    debconf-set-selections <<< "mysql-server mysql-server/root_password_again password password1"
+    debconf-set-selections <<< "mysql-server mysql-server/root_password password ${MYSQL_PASSWORD}"
+    debconf-set-selections <<< "mysql-server mysql-server/root_password_again password ${MYSQL_PASSWORD}"
     apt-get -q -y install mysql-server-5.7 mysql-client-5.7
 
     echo "####################################################################"
@@ -99,8 +100,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "############## CREATING DATABASE & ADD % TO ROOT ###################"
     echo "####################################################################"
-    mysql -u root -e "create database site;"
-    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '';"
+    mysql -u root -p${MYSQL_PASSWORD} -e "create database site;"
+    mysql -u root -p${MYSQL_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '';"
     service mysql restart
 
     echo "####################################################################"
