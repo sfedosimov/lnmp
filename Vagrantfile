@@ -8,6 +8,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # options are documented and commented below. For a complete reference,
   # please see the online documentation at vagrantup.com.
 
+  site_name = "site"
+
   # box name.  Any box from vagrant share or a box from a custom URL.
   config.vm.box = "ubuntu/trusty64"
 
@@ -20,7 +22,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   ## IP to access box
   config.vm.network "private_network", ip: "192.168.192.168"
-  config.vm.hostname = 'site.dev'
+  config.vm.hostname = site_name + '.dev'
   config.hostmanager.enabled = true
   config.hostmanager.manage_host = true
 
@@ -40,21 +42,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 #, create: true
 
-  config.vm.synced_folder ".", "/var/www/html/site", create: true, type: "nfs"
+  config.vm.synced_folder ".", "/var/www/html/" + site_name, create: true, type: "nfs"
   config.nfs.map_uid = Process.uid
   config.nfs.map_gid = Process.gid
-  config.bindfs.bind_folder "/var/www/html/site", "/var/www/html/site"
+  config.bindfs.bind_folder "/var/www/html/" + site_name, "/var/www/html/" + site_name
 
   ## Bootstrap script to provision box.  All installation methods can go here.
   config.vm.provision "shell", inline: <<-SHELL
-    HTTP_PATH="/var/www/html/site"
+    SITE_NAME="site"
+    HTTP_PATH="/var/www/html/${SITE_NAME}"
     PHP_INI_PATH="/etc/php/7.0/fpm/php.ini"
     PHP_FPM_WWW="/etc/php/7.0/fpm/pool.d/www.conf"
     MYSQL_CFG_PATH="/etc/mysql/mysql.conf.d/mysqld.cnf"
     MYSQL_PASSWORD="password1"
     MYSQL_DUMP_FILE="${HTTP_PATH}/dump.sql"
     MYSQL_DUMP_FILE_GZ="${HTTP_PATH}/dump.sql.gz"
-    DB_NAME_FOR_IMPORT="site"
+    DB_NAME_FOR_IMPORT=${SITE_NAME}
     BASH_SCRIPT="script.sh"
 
     echo "####################################################################"
@@ -105,8 +108,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "############## CREATING DATABASE & ADD % TO ROOT ###################"
     echo "####################################################################"
-    mysql -u root -p${MYSQL_PASSWORD} -e "create database site;"
-    mysql -u root -p${MYSQL_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';"
+    mysql -u root -p${MYSQL_PASSWORD} -e "create database ${SITE_NAME};"
+    mysql -u root -p${MYSQL_PASSWORD} -e "use mysql; CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';"
     service mysql restart
 
     echo "####################################################################"
@@ -144,6 +147,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     sed -i "s/^user = www-data.*/user = vagrant/" ${PHP_FPM_WWW}
     sed -i "s/^group = www-data.*/group = vagrant/" /etc/php/7.0/fpm/pool.d/www.conf
 
+    phpdismod xdebug
+
     service php7.0-fpm restart
 
     echo "####################################################################"
@@ -160,7 +165,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "######################## INSTALLING POSTFIX ########################"
     echo "####################################################################"
-    debconf-set-selections <<< "postfix postfix/mailname string site.dev"
+    debconf-set-selections <<< "postfix postfix/mailname string ${SITE_NAME}.dev"
     debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
     apt-get -y install postfix
 
@@ -174,7 +179,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         index index.php index.html index.htm;
 
-        server_name site.dev;
+        server_name ${SITE_NAME}.dev;
         root ${HTTP_PATH};
 
         ssl_certificate     ssl.crt;
@@ -201,8 +206,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             include fastcgi_params;
         }
     }
-    " > /etc/nginx/sites-available/site.dev
-    ln -s /etc/nginx/sites-available/site.dev /etc/nginx/sites-enabled/site.dev
+    " > /etc/nginx/sites-available/${SITE_NAME}.dev
+    ln -s /etc/nginx/sites-available/${SITE_NAME}.dev /etc/nginx/sites-enabled/${SITE_NAME}.dev
     service nginx restart
 
     echo "####################################################################"
@@ -221,7 +226,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "####################################################################"
     echo "################# PHP-Environment Vagrant Box ready! ###############"
-    echo "################# Go to http://site.dev/             ###############"
+    echo "################# Go to http://${SITE_NAME}.dev/     ###############"
     echo "####################################################################"
     echo "####################################################################"
   SHELL
