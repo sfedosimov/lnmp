@@ -49,6 +49,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline: <<-SHELL
     HTTP_PATH="/var/www/html/site"
     PHP_INI_PATH="/etc/php/7.0/fpm/php.ini"
+    PHP_FPM_WWW="/etc/php/7.0/fpm/pool.d/www.conf"
     MYSQL_CFG_PATH="/etc/mysql/mysql.conf.d/mysqld.cnf"
     MYSQL_PASSWORD="password1"
     MYSQL_DUMP_FILE="${HTTP_PATH}/dump.sql"
@@ -97,14 +98,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "######################### CONFIGURE MYSQL ##########################"
     echo "####################################################################"
-    sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" ${MYSQL_CFG_PATH}
+    sed -i "s/bind-address.*/bind-address = 0.0.0.0/" ${MYSQL_CFG_PATH}
     echo "wait_timeout = 600" >> ${MYSQL_CFG_PATH}
 
     echo "####################################################################"
     echo "############## CREATING DATABASE & ADD % TO ROOT ###################"
     echo "####################################################################"
     mysql -u root -p${MYSQL_PASSWORD} -e "create database site;"
-    mysql -u root -p${MYSQL_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '';"
+    mysql -u root -p${MYSQL_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';"
     service mysql restart
 
     echo "####################################################################"
@@ -127,7 +128,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     echo "###################### INSTALLING PHP EXTENSIONS ###################"
     echo "####################################################################"
-    apt-get -y install php7.0-mcrypt php7.0-curl php7.0-cli php7.0-mysql php7.0-gd php7.0-intl php7.0-common php-pear php7.0-dev php7.0-xsl php-xdebug
+    apt-get -y install php7.0-mcrypt php7.0-curl php7.0-cli php7.0-mysql php7.0-gd php7.0-intl php7.0-common php-pear php7.0-dev php7.0-xsl php-xdebug php7.0-mbstring php7.0-zip
 
     echo "####################################################################"
     echo "########################## CONFIGURE PHP ###########################"
@@ -135,10 +136,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "memory_limit = 1024M" >> ${PHP_INI_PATH}
     echo "max_execution_time = 600" >> ${PHP_INI_PATH}
     echo "always_populate_raw_post_data = -1" >> ${PHP_INI_PATH}
-    echo "cgi.fix_pathinfo = 0" >> ${PHP_INI_PATH}
     echo "date.timezone = America/New_York" >> ${PHP_INI_PATH}
     echo "xdebug.remote_enable = 1" >> ${PHP_INI_PATH}
     echo "xdebug.remote_connect_back = 1" >> ${PHP_INI_PATH}
+
+    sed -i "s/^user = www-data.*/user = vagrant/" ${PHP_FPM_WWW}
+    sed -i "s/^group = www-data.*/group = vagrant/" /etc/php/7.0/fpm/pool.d/www.conf
 
     service php7.0-fpm restart
 
@@ -205,6 +208,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "######################## INSTALL OTHER SOFT ########################"
     echo "####################################################################"
     apt-get -y install htop
+
+    echo "####################################################################"
+    echo "######################## RUN CUSTOM SCRIPT #########################"
+    echo "####################################################################"
+
+    if [ -f ${BASH_SCRIPT} ]; then
+        ./${BASH_SCRIPT}
+    fi
 
     echo "####################################################################"
     echo "####################################################################"
