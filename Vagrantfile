@@ -55,6 +55,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     MYSQL_DUMP_FILE="${HTTP_PATH}/dump.sql"
     MYSQL_DUMP_FILE_GZ="${HTTP_PATH}/dump.sql.gz"
     DB_NAME_FOR_IMPORT="site"
+    BASH_SCRIPT="script.sh"
 
     echo "####################################################################"
     echo "############################# Edit PS1 #############################"
