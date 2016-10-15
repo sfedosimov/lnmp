@@ -110,6 +110,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "####################################################################"
     mysql -u root -p${MYSQL_PASSWORD} -e "create database ${SITE_NAME};"
     mysql -u root -p${MYSQL_PASSWORD} -e "use mysql; CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';"
+    mysql -u root -p${MYSQL_PASSWORD} -e "GRANT ALL PRIVILEGES ON * . * TO 'root'@'%';"
     service mysql restart
 
     echo "####################################################################"
